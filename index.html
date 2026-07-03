@@ -8,47 +8,36 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #1e293b; padding: 20px; }
         .app-container { max-width: 900px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; }
-        
         header { border-bottom: 2px solid #0284c7; padding-bottom: 15px; margin-bottom: 25px; }
         header h1 { color: #0284c7; font-size: 22px; text-transform: uppercase; }
         header p { font-size: 13px; color: #64748b; margin-top: 5px; }
-
         .upload-section { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 6px; border: 1px dashed #cbd5e1; }
         @media(min-width: 600px) { .upload-section { grid-template-columns: 1fr 1fr; } }
-
         .btn-capture { background: #0284c7; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-capture:hover { background: #0369a1; }
-        
         .manual-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .form-group { display: flex; flex-direction: column; gap: 5px; }
         .form-group label { font-size: 12px; font-weight: 600; color: #475569; }
         .form-group input { padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
-
         .btn-add { grid-column: span 2; background: #22c55e; color: white; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .btn-add:hover { background: #16a34a; }
-
-        /* TABELA DE REEMBOLSO OTIMIZADA */
         .table-container { overflow-x: auto; margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
         th { background: #f1f5f9; color: #475569; font-weight: bold; text-transform: uppercase; font-size: 11px; }
         tr:hover { background: #f8fafc; }
-        
         .receipt-preview { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1; cursor: pointer; }
         .total-box { margin-top: 20px; text-align: right; font-size: 16px; font-weight: bold; color: #0f172a; padding-top: 15px; border-top: 2px solid #e2e8f0; }
-        
         .btn-export { background: #475569; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; float: left; }
         .btn-export:hover { background: #334155; }
     </style>
 </head>
 <body>
-
 <div class="app-container">
     <header>
-        <h1>Lanço Inteligente de Reembolso</h1>
+        <h1>Lançamento Inteligente de Reembolso</h1>
         <p>Tire a foto do cupom/nota fiscal para alimentar a planilha automaticamente em ordem cronológica.</p>
     </header>
-
     <div class="upload-section">
         <div style="display: flex; flex-direction: column; justify-content: center; gap: 10px;">
             <label class="btn-capture">
@@ -57,7 +46,6 @@
             </label>
             <p style="font-size: 11px; color: #64748b; text-align: center;">Dica: Em celulares, o botão abre a câmera automaticamente.</p>
         </div>
-
         <div class="manual-fields">
             <div class="form-group">
                 <label>Data e Hora da Nota</label>
@@ -70,7 +58,6 @@
             <button class="btn-add" onclick="adicionarNotaAoRelatorio()">Confirmar e Inserir na Planilha</button>
         </div>
     </div>
-
     <h3>📊 Extrato do Relatório (Ordem Crescente)</h3>
     <div class="table-container">
         <table id="tabelaReembolso">
@@ -82,98 +69,62 @@
                     <th>Ação</th>
                 </tr>
             </thead>
-            <tbody id="corpoTabela">
-                </tbody>
+            <tbody id="corpoTabela"></tbody>
         </table>
     </div>
-
     <div class="total-box">
         <button class="btn-export" onclick="exportarParaCSV()">💾 Exportar Planilha (.CSV)</button>
         Total a Reembolsar: <span id="valorTotal">R$ 0,00</span>
     </div>
 </div>
-
 <script>
-    // Banco de dados temporário dos lançamentos
     let lancamentos = [];
-
-    // Simula a leitura da foto (OCR) preenchendo os campos automaticamente
     function processarNotaFiscal(input) {
         if (input.files && input.files[0]) {
             const leitor = new FileReader();
             leitor.onload = function(e) {
-                // Armazena temporariamente a imagem em string Base64
                 input.dataset.tempImg = e.target.result;
-
-                /* NOTA DE DESENVOLVIMENTO FUTURE:
-                   Aqui entraria a API de OCR (Ex: Tesseract.js ou Google Vision AI)
-                   Para fins práticos e imediatos, simulamos o preenchimento automático:
-                */
                 const hoje = new Date();
-                // Formata para o input datetime-local (YYYY-MM-DDTHH:MM)
                 const dataFormatada = hoje.toISOString().slice(0, 16);
-                
                 document.getElementById("notaDataHora").value = dataFormatada;
-                document.getElementById("notaValor").value = (Math.random() * (80 - 15) + 15).toFixed(2); // Valor simulado
-                
-                alert("✨ Foto anexada com sucesso! Os campos foram preenchidos de forma estimada. Confira os valores antes de confirmar.");
+                document.getElementById("notaValor").value = (Math.random() * (80 - 15) + 15).toFixed(2);
+                alert("✨ Foto anexada! Os campos foram preenchidos de forma estimada. Confira os valores antes de confirmar.");
             };
             leitor.readAsDataURL(input.files[0]);
         }
     }
-
-    // Adiciona o item no array, ordena de forma crescente e atualiza a tela
     function adicionarNotaAoRelatorio() {
         const dataHoraInput = document.getElementById("notaDataHora").value;
         const valorInput = parseFloat(document.getElementById("notaValor").value);
         const arquivoInput = document.getElementById("notaArquivo");
         const imagemBase64 = arquivoInput.dataset.tempImg || "";
-
         if (!dataHoraInput || isNaN(valorInput) || valorInput <= 0) {
             alert("⚠️ Por favor, preencha a data/hora e o valor correto da nota.");
             return;
         }
-
-        // Cria o objeto do lançamento
         const novoLancamento = {
             id: Date.now(),
-            dataHora: new Date(dataHoraHoraAjustada(dataHoraInput)),
+            dataHora: new Date(dataHoraInput.replace('T', ' ')),
             valor: valorInput,
             imagem: imagemBase64
         };
-
         lancamentos.push(novoLancamento);
-        
-        // REGRA DE NEGÓCIO: Ordenação Cronológica Crescente (Mais antigo ao mais recente)
         lancamentos.sort((a, b) => a.dataHora - b.dataHora);
-
-        // Limpa campos de entrada
         document.getElementById("notaDataHora").value = "";
         document.getElementById("notaValor").value = "";
         delete arquivoInput.dataset.tempImg;
         arquivoInput.value = "";
-
         atualizarTabelaTela();
     }
-
-    // Corrige fuso horário do input datetime-local
-    function dataHoraHoraAjustada(stringDataHora) {
-        return stringDataHora.replace('T', ' ');
-    }
-
-    // Renderiza as linhas na tela e calcula o valor total
     function atualizarTabelaTela() {
         const corpo = document.getElementById("corpoTabela");
         corpo.innerHTML = "";
         let somaTotal = 0;
-
         lancamentos.forEach(item => {
             somaTotal += item.valor;
             const linha = document.createElement("tr");
-
             const dataFormatada = item.dataHora.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
             const previewImg = item.imagem ? `<img src="${item.imagem}" class="receipt-preview" onclick="visualizarImagem('${item.imagem}')">` : `<span style="color:#94a3b8">Sem foto</span>`;
-
             linha.innerHTML = `
                 <td><strong>${dataFormatada}</strong></td>
                 <td>${previewImg}</td>
@@ -182,21 +133,16 @@
             `;
             corpo.appendChild(linha);
         });
-
         document.getElementById("valorTotal").innerText = `R$ ${somaTotal.toFixed(2).replace('.', ',')}`;
     }
-
     function removerItem(id) {
         lancamentos = lancamentos.filter(item => item.id !== id);
         atualizarTabelaTela();
     }
-
     function visualizarImagem(base64) {
         const janela = window.open();
         janela.document.write(`<img src="${base64}" style="max-width:100%; height:auto; display:block; margin:0 auto;">`);
     }
-
-    // Exporta os dados tratados prontos para abrir no Excel do seu computador
     function exportarParaCSV() {
         if(lancamentos.length === 0) {
             alert("A tabela está vazia!");
@@ -209,7 +155,6 @@
             const valor = item.valor.toFixed(2).replace('.', ',');
             csvContent += `${data};${hora};R$ ${valor}\n`;
         });
-
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
