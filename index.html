@@ -84,24 +84,29 @@
             </div>
             <div class="fields-grid">
                 <div class="form-group">
-                    <label>Data e Hora da Despesa</label>
-                    <input type="datetime-local" id="notaDataHora">
+                    <label>Data da Despesa</label>
+                    <input type="date" id="notaData">
                 </div>
                 <div class="form-group">
                     <label>Valor da Nota (R$)</label>
                     <input type="number" id="notaValor" step="0.01" placeholder="0,00">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Descrição / Finalidade</label>
+                    <input type="text" id="notaDescricao" placeholder="Ex: Estacionamento - Shopping Iguatemi ou Almoço Técnico">
                 </div>
                 <button class="btn-add" onclick="adicionarNotaAoRelatorio()">Inserir na Planilha Cronológica</button>
             </div>
         </div>
     </div>
     <div class="form-section">
-        <h3>📊 Extrato Analítico (Ordem Cronológica Crescente)</h3>
+        <h3>📊 Extrato Analítico (Igual à Planilha Original - Ordem Crescente)</h3>
         <div class="table-container">
             <table id="tabelaReembolso">
                 <thead>
                     <tr>
-                        <th>Data e Hora</th>
+                        <th>Data</th>
+                        <th>Descrição / Finalidade</th>
                         <th>Imagem Anexa</th>
                         <th>Valor Reembolsável</th>
                         <th>Ações</th>
@@ -138,33 +143,36 @@
             leitor.onload = function(e) {
                 input.dataset.tempImg = e.target.result;
                 const hoje = new Date();
-                const dataFormatada = hoje.toISOString().slice(0, 16);
-                document.getElementById("notaDataHora").value = dataFormatada;
+                const dataFormatada = hoje.toISOString().slice(0, 10);
+                document.getElementById("notaData").value = dataFormatada;
                 document.getElementById("notaValor").value = (Math.random() * (75 - 12) + 12).toFixed(2);
-                alert("Foto anexada! Ajuste a data e o valor correto antes de prosseguir.");
+                alert("Foto anexada! Ajuste os dados e adicione a descrição do gasto antes de prosseguir.");
             };
             leitor.readAsDataURL(input.files[0]);
         }
     }
     function adicionarNotaAoRelatorio() {
-        const dataHoraInput = document.getElementById("notaDataHora").value;
+        const dataInput = document.getElementById("notaData").value;
         const valorInput = parseFloat(document.getElementById("notaValor").value);
+        const descricaoInput = document.getElementById("notaDescricao").value.trim();
         const arquivoInput = document.getElementById("notaArquivo");
         const imagemBase64 = arquivoInput.dataset.tempImg || "";
-        if (!dataHoraInput || isNaN(valorInput) || valorInput <= 0) {
-            alert("Preencha a data/hora exata do cupom e o valor numérico.");
+        if (!dataInput || isNaN(valorInput) || valorInput <= 0 || !descricaoInput) {
+            alert("Preencha todos os campos: data, valor e a descrição/finalidade do gasto.");
             return;
         }
         const novoLancamento = {
             id: Date.now(),
-            dataHora: new Date(dataHoraInput.replace("T", " ")),
+            data: new Date(dataInput + "T00:00:00"),
+            descricao: descricaoInput,
             valor: valorInput,
             imagem: imagemBase64
         };
         lancamentos.push(novoLancamento);
-        lancamentos.sort((a, b) => a.dataHora - b.dataHora);
-        document.getElementById("notaDataHora").value = "";
+        lancamentos.sort((a, b) => a.data - b.data);
+        document.getElementById("notaData").value = "";
         document.getElementById("notaValor").value = "";
+        document.getElementById("notaDescricao").value = "";
         delete arquivoInput.dataset.tempImg;
         arquivoInput.value = "";
         atualizarTabelaTela();
@@ -176,9 +184,9 @@
         lancamentos.forEach(item => {
             somaTotal += item.valor;
             const linha = document.createElement("tr");
-            const dataFormatada = item.dataHora.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+            const dataFormatada = item.data.toLocaleDateString("pt-BR");
             const previewImg = item.imagem ? `<img src="${item.imagem}" class="receipt-preview" onclick="visualizarImagem('${item.imagem}')">` : `<span style="color:#94a3b8">Sem imagem</span>`;
-            linha.innerHTML = `<td><strong>${dataFormatada}</strong></td><td>${previewImg}</td><td style="font-weight:600; color:#0f172a;">R$ ${item.valor.toFixed(2).replace(".", ",")}</td><td><button class="btn-remove" onclick="removerItem(${item.id})">Remover</button></td>`;
+            linha.innerHTML = `<td><strong>${dataFormatada}</strong></td><td>${item.descricao}</td><td>${previewImg}</td><td style="font-weight:600; color:#0f172a;">R$ ${item.valor.toFixed(2).replace(".", ",")}</td><td><button class="btn-remove" onclick="removerItem(${item.id})">Remover</button></td>`;
             corpo.appendChild(linha);
         });
         document.getElementById("valorTotal").innerText = `R$ ${somaTotal.toFixed(2).replace(".", ",")}`;
@@ -196,12 +204,11 @@
             alert("Insira lançamentos para exportar.");
             return;
         }
-        let csvContent = "data:text/csv;charset=utf-8,Data;Hora;Valor Reembolsável\n";
+        let csvContent = "data:text/csv;charset=utf-8,Data;Descricao / Finalidade;Valor Reembolsável\n";
         lancamentos.forEach(item => {
-            const data = item.dataHora.toLocaleDateString("pt-BR");
-            const hora = item.dataHora.toLocaleTimeString("pt-BR", {hour: "2-digit", minute:"2-digit"});
+            const data = item.data.toLocaleDateString("pt-BR");
             const valor = item.valor.toFixed(2).replace(".", ",");
-            csvContent += `${data};${hora};R$ ${valor}\n`;
+            csvContent += `${data};${item.descricao};R$ ${valor}\n`;
         });
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
