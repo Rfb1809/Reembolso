@@ -19,6 +19,9 @@
             --danger: #f43f5e;
             --warning: #f59e0b;
             --input-bg: #0f172a;
+            /* Nova cor para destaque de fins de semana/feriados */
+            --weekend-bg: rgba(244, 63, 94, 0.15);
+            --weekend-text: #fda4af;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -71,7 +74,6 @@
 
         /* FORMULÁRIOS */
         .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
-        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
         input, select, textarea {
@@ -86,6 +88,10 @@
         .dinamic-table th, .dinamic-table td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
         .dinamic-table th { background: var(--input-bg); color: var(--text-secondary); font-weight: bold; }
         .dinamic-table tr:hover { background: rgba(255,255,255,0.02); }
+
+        /* Estilo especial para finais de semana e feriados */
+        .dinamic-table tr.weekend-row { background-color: var(--weekend-bg) !important; color: var(--weekend-text) !important; }
+        .dinamic-table tr.weekend-row input { color: var(--weekend-text) !important; border-color: rgba(244, 63, 94, 0.3); }
 
         /* SIDE PANEL (BALANÇO) */
         .balanco-box { background: var(--input-bg); border-radius: 6px; border: 1px solid var(--border); padding: 15px; margin-top: 15px; }
@@ -130,14 +136,12 @@
         </div>
     </header>
 
-    <!-- MENU DE ABAS -->
     <div class="tabs-menu">
         <button class="tab-button active" onclick="switchTab('reembolso', this)">💰 Reembolso</button>
         <button class="tab-button" onclick="switchTab('folhaPonto', this); renderizarFolhaPonto()">📅 Folha de Ponto</button>
         <button class="tab-button" onclick="switchTab('agenda', this); renderizarAgenda()">📓 Agenda Diária</button>
     </div>
 
-    <!-- ================== ABA 1: REEMBOLSO ================== -->
     <div id="reembolso" class="tab-content active">
         <div class="card">
             <h2>📋 Identificação e Dados de Controle</h2>
@@ -263,11 +267,10 @@
         </div>
     </div>
 
-    <!-- ================== ABA 2: FOLHA DE PONTO ================== -->
     <div id="folhaPonto" class="tab-content">
         <div class="card">
             <h2>📅 Folha de Ponto Coletiva <span id="periodoFolha" style="color: var(--primary); font-size: 14px; margin-left: 10px;"></span></h2>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">Ciclo mensal de fechamento: Dia 21 do mês anterior ao dia 20 do mês atual.</p>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">Ciclo mensal de fechamento: Dia 20 do mês anterior ao dia 20 do mês atual. Fins de semana e feriados destacados em vermelho.</p>
             
             <div style="overflow-x: auto;">
                 <table class="dinamic-table">
@@ -282,15 +285,13 @@
                         </tr>
                     </thead>
                     <tbody id="corpoPonto">
-                        <!-- Gerado dinamicamente via JS -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
             <button type="button" class="btn-success" style="margin-top: 20px; width: 250px;" onclick="salvarFolhaPonto()">💾 Salvar Folha de Ponto</button>
         </div>
     </div>
 
-    <!-- ================== ABA 3: AGENDA DIÁRIA ================== -->
     <div id="agenda" class="tab-content">
         <div class="grid">
             <div>
@@ -320,8 +321,7 @@
                 <div class="card">
                     <h2>📋 Serviços Agendados para o Dia <span id="agendaDataSelecionada" style="color:var(--primary)"></span></h2>
                     <div id="listaTarefas" style="margin-top: 15px;">
-                        <!-- Gerado dinamicamente via JS -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
@@ -339,6 +339,19 @@
     let imagemTemporariaBase64 = "";
     let bancoDadosPonto = JSON.parse(localStorage.getItem('bancoDadosPonto')) || {};
     let bancoDadosAgenda = JSON.parse(localStorage.getItem('bancoDadosAgenda')) || [];
+
+    // Feriados Nacionais Fixos e Variáveis de Referência (Simplificados para validação padrão no Brasil)
+    const feriadosFixos = [
+        "01-01", // Ano Novo
+        "04-21", // Tiradentes
+        "05-01", // Dia do Trabalho
+        "09-07", // Independência
+        "10-12", // Nsa. Senhora Aparecida
+        "11-02", // Finados
+        "11-15", // Proclamação da República
+        "11-20", // Consciência Negra
+        "12-25"  // Natal
+    ];
 
     // Inicialização de Datas nos Formulários
     document.getElementById('notaData').valueAsDate = new Date();
@@ -559,12 +572,20 @@
     /* ==========================================================================
        ABA 2: FOLHA DE PONTO (GERAÇÃO DINÂMICA)
        ========================================================================== */
+    function verificarSeEhFeriado(dataObj) {
+        const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+        const dia = String(dataObj.getDate()).padStart(2, '0');
+        const ddmmaa = `${mes}-${dia}`;
+        return feriadosFixos.includes(ddmmaa);
+    }
+
     function gerarPeriodoFechamento() {
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
         const mesAtual = hoje.getMonth(); 
 
-        const dataInicio = new Date(anoAtual, mesAtual - 1, 21);
+        // NOVO CICLO: Do dia 20 do mês anterior até o dia 20 do mês atual
+        const dataInicio = new Date(anoAtual, mesAtual - 1, 20);
         const dataFim = new Date(anoAtual, mesAtual, 20);
 
         return { dataInicio, dataFim };
@@ -582,18 +603,21 @@
 
         while (atual <= dataFim) {
             const dataIso = atual.toISOString().split('T')[0];
-            const diaSemana = diasSemana[atual.getDay()];
+            const diaSemanaNum = atual.getDay();
+            const diaSemana = diasSemana[diaSemanaNum];
             const dataFmt = `${atual.toLocaleDateString('pt-BR')} (${diaSemana})`;
             
-            // Define se é final de semana para marcar com cor especial
-            const isFimDeSemana = (atual.getDay() === 0 || atual.getDay() === 6);
-            const estiloFundo = isFimDeSemana ? 'style="background-color: rgba(255, 255, 255, 0.03);"' : '';
+            // Verifica se é final de semana ou feriado nacional
+            const ehFeriado = verificarSeEhFeriado(atual);
+            const ehFimDeSemana = (diaSemanaNum === 0 || diaSemanaNum === 6);
+            const destacarDia = ehFimDeSemana || ehFeriado;
 
-            // Se for Final de Semana, os campos padrão iniciam vazios. Se for dia de semana, inicia pré-estabelecido.
-            const defaultEnt1 = isFimDeSemana ? "" : "07:00";
-            const defaultSai1 = isFimDeSemana ? "" : "12:00";
-            const defaultEnt2 = isFimDeSemana ? "" : "13:00";
-            const defaultSai2 = isFimDeSemana ? "" : "17:00";
+            // Define se os campos vêm pré-preenchidos (vazio em dias destacados, 7h-17h em dias úteis normais)
+            const defaultEnt1 = destacarDia ? "" : "07:00";
+            const defaultSai1 = destacarDia ? "" : "12:00";
+            const defaultEnt2 = destacarDia ? "" : "13:00";
+            const defaultSai2 = destacarDia ? "" : "17:00";
+            const defaultObs = ehFeriado ? "Feriado Nacional" : "";
 
             // Verifica se já existem dados salvos no localStorage, senão aplica as predefinições acima
             const dadosDia = bancoDadosPonto[dataIso] || { 
@@ -601,17 +625,21 @@
                 sai1: defaultSai1, 
                 ent2: defaultEnt2, 
                 sai2: defaultSai2, 
-                obs: '' 
+                obs: defaultObs 
             };
 
             const tr = document.createElement("tr");
+            if (destacarDia) {
+                tr.className = "weekend-row";
+            }
+
             tr.innerHTML = `
-                <td ${estiloFundo}><strong>${dataFmt}</strong></td>
+                <td><strong>${dataFmt}</strong></td>
                 <td><input type="time" id="ent1-${dataIso}" value="${dadosDia.ent1}"></td>
                 <td><input type="time" id="sai1-${dataIso}" value="${dadosDia.sai1}"></td>
                 <td><input type="time" id="ent2-${dataIso}" value="${dadosDia.ent2}"></td>
                 <td><input type="time" id="sai2-${dataIso}" value="${dadosDia.sai2}"></td>
-                <td><input type="text" id="obs-${dataIso}" placeholder="Justificativa, atestado ou hora extra..." value="${dadosDia.obs}"></td>
+                <td><input type="text" id="obs-${dataIso}" placeholder="Observação..." value="${dadosDia.obs}"></td>
             `;
             corpoPonto.appendChild(tr);
 
