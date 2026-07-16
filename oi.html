@@ -71,6 +71,7 @@
 
         /* FORMULÁRIOS */
         .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
         input, select, textarea {
@@ -129,12 +130,14 @@
         </div>
     </header>
 
+    <!-- MENU DE ABAS -->
     <div class="tabs-menu">
         <button class="tab-button active" onclick="switchTab('reembolso', this)">💰 Reembolso</button>
         <button class="tab-button" onclick="switchTab('folhaPonto', this); renderizarFolhaPonto()">📅 Folha de Ponto</button>
         <button class="tab-button" onclick="switchTab('agenda', this); renderizarAgenda()">📓 Agenda Diária</button>
     </div>
 
+    <!-- ================== ABA 1: REEMBOLSO ================== -->
     <div id="reembolso" class="tab-content active">
         <div class="card">
             <h2>📋 Identificação e Dados de Controle</h2>
@@ -260,6 +263,7 @@
         </div>
     </div>
 
+    <!-- ================== ABA 2: FOLHA DE PONTO ================== -->
     <div id="folhaPonto" class="tab-content">
         <div class="card">
             <h2>📅 Folha de Ponto Coletiva <span id="periodoFolha" style="color: var(--primary); font-size: 14px; margin-left: 10px;"></span></h2>
@@ -278,13 +282,15 @@
                         </tr>
                     </thead>
                     <tbody id="corpoPonto">
-                        </tbody>
+                        <!-- Gerado dinamicamente via JS -->
+                    </tbody>
                 </table>
             </div>
             <button type="button" class="btn-success" style="margin-top: 20px; width: 250px;" onclick="salvarFolhaPonto()">💾 Salvar Folha de Ponto</button>
         </div>
     </div>
 
+    <!-- ================== ABA 3: AGENDA DIÁRIA ================== -->
     <div id="agenda" class="tab-content">
         <div class="grid">
             <div>
@@ -314,7 +320,8 @@
                 <div class="card">
                     <h2>📋 Serviços Agendados para o Dia <span id="agendaDataSelecionada" style="color:var(--primary)"></span></h2>
                     <div id="listaTarefas" style="margin-top: 15px;">
-                        </div>
+                        <!-- Gerado dinamicamente via JS -->
+                    </div>
                 </div>
             </div>
 
@@ -555,11 +562,9 @@
     function gerarPeriodoFechamento() {
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
-        const mesAtual = hoje.getMonth(); // 0 a 11
+        const mesAtual = hoje.getMonth(); 
 
-        // Inicia no dia 21 do mês anterior
         const dataInicio = new Date(anoAtual, mesAtual - 1, 21);
-        // Termina no dia 20 do mês atual
         const dataFim = new Date(anoAtual, mesAtual, 20);
 
         return { dataInicio, dataFim };
@@ -570,7 +575,6 @@
         const corpoPonto = document.getElementById("corpoPonto");
         corpoPonto.innerHTML = "";
 
-        // Mostra o período no Cabeçalho
         document.getElementById("periodoFolha").innerText = `(${dataInicio.toLocaleDateString('pt-BR')} até ${dataFim.toLocaleDateString('pt-BR')})`;
 
         let atual = new Date(dataInicio);
@@ -581,12 +585,24 @@
             const diaSemana = diasSemana[atual.getDay()];
             const dataFmt = `${atual.toLocaleDateString('pt-BR')} (${diaSemana})`;
             
-            // Verifica se já existem dados salvos localmente
-            const dadosDia = bancoDadosPonto[dataIso] || { ent1: '', sai1: '', ent2: '', sai2: '', obs: '' };
-
-            // Estilização extra se for final de semana
+            // Define se é final de semana para marcar com cor especial
             const isFimDeSemana = (atual.getDay() === 0 || atual.getDay() === 6);
             const estiloFundo = isFimDeSemana ? 'style="background-color: rgba(255, 255, 255, 0.03);"' : '';
+
+            // Se for Final de Semana, os campos padrão iniciam vazios. Se for dia de semana, inicia pré-estabelecido.
+            const defaultEnt1 = isFimDeSemana ? "" : "07:00";
+            const defaultSai1 = isFimDeSemana ? "" : "12:00";
+            const defaultEnt2 = isFimDeSemana ? "" : "13:00";
+            const defaultSai2 = isFimDeSemana ? "" : "17:00";
+
+            // Verifica se já existem dados salvos no localStorage, senão aplica as predefinições acima
+            const dadosDia = bancoDadosPonto[dataIso] || { 
+                ent1: defaultEnt1, 
+                sai1: defaultSai1, 
+                ent2: defaultEnt2, 
+                sai2: defaultSai2, 
+                obs: '' 
+            };
 
             const tr = document.createElement("tr");
             tr.innerHTML = `
@@ -599,7 +615,6 @@
             `;
             corpoPonto.appendChild(tr);
 
-            // Avança 1 dia
             atual.setDate(atual.getDate() + 1);
         }
     }
@@ -639,7 +654,6 @@
         const lista = document.getElementById("listaTarefas");
         lista.innerHTML = "";
 
-        // Filtra as tarefas salvas para o dia selecionado
         const tarefasDia = bancoDadosAgenda.filter(t => t.data === dataSelecionada);
 
         if (tarefasDia.length === 0) {
@@ -679,7 +693,7 @@
             data: data,
             titulo: titulo,
             descricao: descricao,
-            status: 'pendente' // status inicial
+            status: 'pendente'
         };
 
         bancoDadosAgenda.push(novaTarefa);
